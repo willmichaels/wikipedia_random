@@ -4,9 +4,17 @@
  */
 
 const VITAL_SOURCES = {
-  physics: "Wikipedia:Vital_articles/Level/4/Physical_sciences",
-  technology: "Wikipedia:Vital_articles/Level/4/Technology",
-  economics: "Wikipedia:Vital_articles/Level/4/Society_and_social_sciences"
+  vital_people: "Wikipedia:Vital_articles/Level/4/People",
+  vital_history: "Wikipedia:Vital_articles/Level/4/History",
+  vital_geography: "Wikipedia:Vital_articles/Level/4/Geography",
+  vital_arts: "Wikipedia:Vital_articles/Level/4/Arts",
+  vital_philosophy_religion: "Wikipedia:Vital_articles/Level/4/Philosophy_and_religion",
+  vital_everyday_life: "Wikipedia:Vital_articles/Level/4/Everyday_life",
+  vital_society_social_sciences: "Wikipedia:Vital_articles/Level/4/Society_and_social_sciences",
+  vital_biology_health_sciences: "Wikipedia:Vital_articles/Level/4/Biology_and_health_sciences",
+  vital_physical_sciences: "Wikipedia:Vital_articles/Level/4/Physical_sciences",
+  vital_technology: "Wikipedia:Vital_articles/Level/4/Technology",
+  vital_mathematics: "Wikipedia:Vital_articles/Level/4/Mathematics"
 };
 
 const GOOD_SOURCES = {
@@ -29,9 +37,17 @@ const GOOD_SOURCES = {
 };
 
 const CATEGORY_LABELS = {
-  physics: "Physical Sciences",
-  technology: "Engineering & Tech",
-  economics: "Society & Economics",
+  vital_people: "People",
+  vital_history: "History",
+  vital_geography: "Geography",
+  vital_arts: "Arts",
+  vital_philosophy_religion: "Philosophy and religion",
+  vital_everyday_life: "Everyday life",
+  vital_society_social_sciences: "Society and social sciences",
+  vital_biology_health_sciences: "Biology and health sciences",
+  vital_physical_sciences: "Physical sciences",
+  vital_technology: "Technology",
+  vital_mathematics: "Mathematics",
   agriculture_food_drink: "Agriculture, food and drink",
   art_architecture: "Art and architecture",
   engineering_technology: "Engineering and technology",

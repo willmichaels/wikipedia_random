@@ -8,7 +8,7 @@
         .container { background: white; max-width: 600px; margin: auto; padding: 40px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         h1 { color: #333; margin-bottom: 25px; }
         
-        select { padding: 10px; font-size: 16px; border-radius: 5px; border: 1px solid #ccc; margin-right: 10px; min-width: 280px; }
+        select { padding: 10px; font-size: 16px; border-radius: 5px; border: 1px solid #ccc; margin-right: 10px; min-width: 300px; }
         
         button { background-color: #007bff; color: white; border: none; padding: 12px 25px; font-size: 16px; border-radius: 5px; cursor: pointer; transition: background 0.3s; }
         button:hover { background-color: #0056b3; }
@@ -27,10 +27,18 @@
         
         <div>
             <select id="categorySelect">
-                <optgroup label="Vital Articles">
-                    <option value="physics">Physical Sciences</option>
-                    <option value="technology">Engineering & Tech</option>
-                    <option value="economics">Society & Economics</option>
+                <optgroup label="Vital Articles (Level 4)">
+                    <option value="vital_people">People</option>
+                    <option value="vital_history">History</option>
+                    <option value="vital_geography">Geography</option>
+                    <option value="vital_arts">Arts</option>
+                    <option value="vital_philosophy_religion">Philosophy and religion</option>
+                    <option value="vital_everyday_life">Everyday life</option>
+                    <option value="vital_society_social_sciences">Society and social sciences</option>
+                    <option value="vital_biology_health_sciences">Biology and health sciences</option>
+                    <option value="vital_physical_sciences">Physical sciences</option>
+                    <option value="vital_technology">Technology</option>
+                    <option value="vital_mathematics">Mathematics</option>
                 </optgroup>
                 <optgroup label="Good Articles">
                     <option value="agriculture_food_drink">Agriculture, food and drink</option>
