@@ -21,6 +21,8 @@ npx serve docs
 
 Open http://localhost:3000 (or the port shown)
 
+**Note:** Do not open `docs/index.html` directly in a browser (file://). Wikipedia's API blocks requests from the null origin. Use a local server.
+
 ## Deploy to GitHub Pages
 
 1. Push this repo to GitHub.

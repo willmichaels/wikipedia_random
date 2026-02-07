@@ -67,7 +67,10 @@ const CATEGORY_LABELS = {
 };
 
 const API_BASE = "https://en.wikipedia.org/w/api.php";
-const HEADERS = { "Api-User-Agent": "RandomTechnicalWiki/1.0 (static)" };
+const HEADERS = {
+  "User-Agent": "RandomTechnicalWiki/1.0 (https://github.com; contact via GitHub)",
+  "Api-User-Agent": "RandomTechnicalWiki/1.0 (https://github.com)"
+};
 
 // Cache: { category: ["/wiki/Title1", "/wiki/Title2", ...] }
 const ARTICLES_CACHE = {};
@@ -86,25 +89,41 @@ async function fetchArticleLinks(category) {
   const allLinks = [];
   let plcontinue = null;
 
-  do {
-    let url = `${API_BASE}?action=query&prop=links&titles=${encodeURIComponent(pageTitle)}&plnamespace=0&pllimit=500&format=json&origin=*`;
-    if (plcontinue) url += `&plcontinue=${encodeURIComponent(plcontinue)}`;
+  try {
+    do {
+      let url = `${API_BASE}?action=query&prop=links&titles=${encodeURIComponent(pageTitle)}&plnamespace=0&pllimit=500&format=json&origin=*`;
+      if (plcontinue) url += `&plcontinue=${encodeURIComponent(plcontinue)}`;
 
-    const response = await fetch(url, { headers: HEADERS });
-    const data = await response.json();
-    if (data.error) return [];
-
-    const pages = data.query?.pages || {};
-    const page = Object.values(pages)[0];
-    const links = page?.links || [];
-    for (const link of links) {
-      if (link.ns === 0 && !link.title.includes(":")) {
-        allLinks.push("/wiki/" + link.title.replace(/ /g, "_"));
+      const response = await fetch(url, { headers: HEADERS, mode: "cors" });
+      if (!response.ok) {
+        console.error("Wikipedia API error:", response.status, response.statusText);
+        return [];
       }
-    }
+      const data = await response.json();
+      if (data.error) {
+        console.error("Wikipedia API error:", data.error);
+        return [];
+      }
 
-    plcontinue = data.continue?.plcontinue || null;
-  } while (plcontinue);
+      const pages = data.query?.pages || {};
+      const page = Object.values(pages)[0];
+      if (page?.missing !== undefined) {
+        console.error("Wikipedia page not found:", pageTitle);
+        return [];
+      }
+      const links = page?.links || [];
+      for (const link of links) {
+        if (link.ns === 0 && !link.title.includes(":")) {
+          allLinks.push("/wiki/" + link.title.replace(/ /g, "_"));
+        }
+      }
+
+      plcontinue = data.continue?.plcontinue || null;
+    } while (plcontinue);
+  } catch (err) {
+    console.error("Fetch error:", err);
+    return [];
+  }
 
   return allLinks;
 }
@@ -390,10 +409,17 @@ async function fetchArticle() {
 
   resultDiv.innerHTML = "Loading...";
 
-  const url = await getRandomArticle(category);
+  let url;
+  try {
+    url = await getRandomArticle(category);
+  } catch (err) {
+    console.error("fetchArticle error:", err);
+    resultDiv.innerHTML = `Failed to fetch article. Check the browser console (F12) for details. If testing locally, try <code>npx serve docs</code> instead of opening the file directly.`;
+    return;
+  }
 
   if (!url) {
-    resultDiv.textContent = "Failed to fetch article (likely connection error).";
+    resultDiv.innerHTML = `Failed to fetch article. Check the browser console (F12) for details. If testing locally, try <code>npx serve docs</code> instead of opening the file directly.`;
     return;
   }
 
