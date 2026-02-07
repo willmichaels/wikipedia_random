@@ -140,10 +140,12 @@ function renderReadLog() {
 
 function formatLogDate(iso) {
   try {
-    return new Date(iso).toLocaleDateString("en-US", {
+    return new Date(iso).toLocaleString("en-US", {
       month: "short",
       day: "numeric",
-      year: "numeric"
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit"
     });
   } catch {
     return iso;
@@ -505,7 +507,9 @@ async function fetchArticle() {
     <div class="meta">Category: ${escapeHtml(categoryLabel)}</div>
     <div class="meta" style="margin-top: 12px;">
       Download: <span class="download-link" data-url="${escapeHtml(url)}" data-format="txt">Plain text</span> &middot; <span class="download-link" data-url="${escapeHtml(url)}" data-format="pdf">PDF</span>
-      &middot; <span class="download-link log-article-link" data-url="${escapeHtml(url)}" data-title="${escapeHtml(title)}" data-category="${escapeHtml(category)}">Log article</span>
+    </div>
+    <div class="meta" style="margin-top: 8px;">
+      <span class="download-link log-article-link" data-url="${escapeHtml(url)}" data-title="${escapeHtml(title)}" data-category="${escapeHtml(category)}">Log article</span>
     </div>
   `;
 
