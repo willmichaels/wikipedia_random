@@ -519,12 +519,12 @@ async function fetchArticle() {
     url = await getRandomArticle(category);
   } catch (err) {
     console.error("fetchArticle error:", err);
-    resultDiv.innerHTML = `Failed to fetch article. Check the browser console (F12) for details. If testing locally, try <code>npx serve docs</code> instead of opening the file directly.`;
+    resultDiv.innerHTML = `Failed to fetch article. Check the browser console (F12) for details. If testing locally, try <code>vercel dev</code> or <code>npx serve public</code> instead of opening the file directly.`;
     return;
   }
 
   if (!url) {
-    resultDiv.innerHTML = `Failed to fetch article. Check the browser console (F12) for details. If testing locally, try <code>npx serve docs</code> instead of opening the file directly.`;
+    resultDiv.innerHTML = `Failed to fetch article. Check the browser console (F12) for details. If testing locally, try <code>vercel dev</code> or <code>npx serve public</code> instead of opening the file directly.`;
     return;
   }
 
@@ -665,7 +665,7 @@ async function handleAuthSubmit(e) {
       if (!res.ok) {
         const noBackend = res.status === 404 || res.status === 0;
         errorEl.textContent = noBackend
-          ? "Login requires the Python backend. Run `python vital_article.py` instead of `npx serve docs`."
+          ? "Login requires the backend. Run `vercel dev` or deploy to Vercel."
           : (data.error || "Registration failed");
         errorEl.style.display = "block";
         return;
@@ -700,7 +700,7 @@ async function handleAuthSubmit(e) {
     if (!res.ok) {
       const noBackend = res.status === 404 || res.status === 0;
       errorEl.textContent = noBackend
-        ? "Login requires the Python backend. Run `python vital_article.py` instead of `npx serve docs`."
+        ? "Login requires the backend. Run `vercel dev` or deploy to Vercel."
         : (data.error || "Login failed");
       errorEl.style.display = "block";
       return;
@@ -717,7 +717,7 @@ async function handleAuthSubmit(e) {
     updateAuthUI();
     renderReadLog();
   } catch (err) {
-    errorEl.textContent = "Could not connect. Run the Python backend for login.";
+    errorEl.textContent = "Could not connect. Run `vercel dev` or deploy to Vercel.";
     errorEl.style.display = "block";
   } finally {
     submitBtn.disabled = false;

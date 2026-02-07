@@ -216,9 +216,9 @@ async def download_article(url: str, format: str = "txt"):
     )
 
 
-# Serve docs app (must be last so API routes take precedence)
-docs_path = Path(__file__).resolve().parent / "docs"
-app.mount("/", StaticFiles(directory=str(docs_path), html=True))
+# Serve public app (must be last so API routes take precedence)
+public_path = Path(__file__).resolve().parent / "public"
+app.mount("/", StaticFiles(directory=str(public_path), html=True))
 
 if __name__ == "__main__":
     uvicorn.run(app, host="127.0.0.1", port=8001)
