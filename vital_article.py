@@ -1,10 +1,22 @@
-from fastapi import FastAPI
-from fastapi.responses import HTMLResponse, PlainTextResponse, Response
+from pathlib import Path
+
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse, PlainTextResponse, Response
+from fastapi.staticfiles import StaticFiles
 import requests
 from bs4 import BeautifulSoup
 import random
 import uvicorn
 
+from auth import (
+    SESSION_COOKIE,
+    get_log,
+    login as auth_login,
+    logout as auth_logout,
+    register as auth_register,
+    save_log,
+    verify_session,
+)
 from wiki_content import (
     fetch_article_content,
     format_plain_text_with_references,
@@ -71,76 +83,83 @@ def get_random_vital_article(category: str):
         return None
 
 
-@app.get("/", response_class=HTMLResponse)
-async def home():
-    html_content = """
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>Random Technical Wiki</title>
-        <style>
-            body { font-family: sans-serif; text-align: center; padding-top: 50px; background-color: #f4f4f9; }
-            .container { background: white; max-width: 600px; margin: auto; padding: 40px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-            h1 { color: #333; margin-bottom: 25px; }
-            
-            /* Dropdown Styling */
-            select { padding: 10px; font-size: 16px; border-radius: 5px; border: 1px solid #ccc; margin-right: 10px; }
-            
-            button { background-color: #007bff; color: white; border: none; padding: 12px 25px; font-size: 16px; border-radius: 5px; cursor: pointer; transition: background 0.3s; }
-            button:hover { background-color: #0056b3; }
-            
-            #result { margin-top: 30px; font-size: 18px; min-height: 40px;}
-            a { color: #007bff; text-decoration: none; font-weight: bold; font-size: 20px; }
-            a:hover { text-decoration: underline; }
-            .meta { color: #666; font-size: 14px; margin-top: 5px; }
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <h1>Random Technical Wiki</h1>
-            
-            <div>
-                <select id="categorySelect">
-                    <option value="physics">Physical Sciences</option>
-                    <option value="technology">Engineering & Tech</option>
-                    <option value="economics">Society & Economics</option>
-                </select>
-                <button onclick="fetchArticle()">Go</button>
-            </div>
+# --- Auth & read-log API ---
 
-            <div id="result"></div>
-        </div>
 
-        <script>
-            async function fetchArticle() {
-                const category = document.getElementById("categorySelect").value;
-                const resultDiv = document.getElementById("result");
-                
-                resultDiv.innerHTML = "Loading...";
-                
-                // Pass the selected category as a query parameter
-                const response = await fetch(`/random?category=${category}`);
-                const data = await response.json();
-                
-                if (data.url) {
-                    // Extract readable title from URL
-                    const title = data.url.split('/wiki/')[1].replace(/_/g, ' ');
-                    resultDiv.innerHTML = `
-                        <div>Read: <a href="${data.url}" target="_blank">${title}</a></div>
-                        <div class="meta">Category: ${category}</div>
-                        <div class="meta" style="margin-top: 12px;">
-                            Download: <a href="/download?url=${encodeURIComponent(data.url)}&format=txt">Plain text</a> &middot; <a href="/download?url=${encodeURIComponent(data.url)}&format=pdf">PDF</a>
-                        </div>
-                    `;
-                } else {
-                    resultDiv.innerText = "Failed to fetch article (likely connection error).";
-                }
-            }
-        </script>
-    </body>
-    </html>
-    """
-    return html_content
+@app.post("/api/register")
+async def api_register(request: Request):
+    body = await request.json()
+    username = (body.get("username") or "").strip()
+    password = body.get("password") or ""
+    err = auth_register(username, password)
+    if err:
+        return JSONResponse({"error": err}, status_code=400)
+    return JSONResponse({"ok": True})
+
+
+@app.post("/api/login")
+async def api_login(request: Request):
+    body = await request.json()
+    username = (body.get("username") or "").strip()
+    password = body.get("password") or ""
+    session_id = auth_login(username, password)
+    if not session_id:
+        return JSONResponse({"error": "Invalid username or password"}, status_code=401)
+    response = JSONResponse({"ok": True, "username": username})
+    response.set_cookie(
+        key=SESSION_COOKIE,
+        value=session_id,
+        httponly=True,
+        samesite="lax",
+        max_age=60 * 60 * 24 * 30,
+    )
+    return response
+
+
+@app.post("/api/logout")
+async def api_logout(request: Request):
+    session_id = request.cookies.get(SESSION_COOKIE)
+    auth_logout(session_id)
+    response = JSONResponse({"ok": True})
+    response.delete_cookie(SESSION_COOKIE)
+    return response
+
+
+@app.get("/api/me")
+async def api_me(request: Request):
+    session_id = request.cookies.get(SESSION_COOKIE)
+    username = verify_session(session_id)
+    if not username:
+        return JSONResponse({"username": None})
+    return JSONResponse({"username": username})
+
+
+@app.get("/api/read-log")
+async def api_get_read_log(request: Request):
+    session_id = request.cookies.get(SESSION_COOKIE)
+    username = verify_session(session_id)
+    if not username:
+        return JSONResponse({"error": "Not logged in"}, status_code=401)
+    log = get_log(username)
+    return JSONResponse({"log": log})
+
+
+@app.post("/api/read-log")
+async def api_save_read_log(request: Request):
+    session_id = request.cookies.get(SESSION_COOKIE)
+    username = verify_session(session_id)
+    if not username:
+        return JSONResponse({"error": "Not logged in"}, status_code=401)
+    body = await request.json()
+    log = body.get("log", [])
+    if not isinstance(log, list):
+        return JSONResponse({"error": "Invalid log"}, status_code=400)
+    save_log(username, log)
+    return JSONResponse({"ok": True})
+
+
+# --- Legacy routes (for backward compatibility) ---
+
 
 @app.get("/random")
 async def random_article(category: str = "physics", format: str | None = None):
@@ -197,5 +216,9 @@ async def download_article(url: str, format: str = "txt"):
     )
 
 
+# Serve docs app (must be last so API routes take precedence)
+docs_path = Path(__file__).resolve().parent / "docs"
+app.mount("/", StaticFiles(directory=str(docs_path), html=True))
+
 if __name__ == "__main__":
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    uvicorn.run(app, host="127.0.0.1", port=8001)

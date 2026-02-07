@@ -77,7 +77,21 @@ const ARTICLES_CACHE = {};
 
 const READ_LOG_KEY = "random_wiki_read_log";
 
+// Auth state (set when backend is available and user is logged in)
+let loggedInUser = null;
+let readLogCache = null;
+
+const fetchOpts = { credentials: "include" };
+
+async function apiFetch(path, options = {}) {
+  const res = await fetch(path, { ...fetchOpts, ...options });
+  return res;
+}
+
 function getReadLog() {
+  if (loggedInUser !== null && readLogCache !== null) {
+    return readLogCache;
+  }
   try {
     const raw = localStorage.getItem(READ_LOG_KEY);
     return raw ? JSON.parse(raw) : [];
@@ -87,6 +101,15 @@ function getReadLog() {
 }
 
 function saveReadLog(log) {
+  if (loggedInUser !== null) {
+    readLogCache = [...log];
+    apiFetch("/api/read-log", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ log })
+    }).catch((e) => console.error("Failed to sync read log:", e));
+    return;
+  }
   try {
     localStorage.setItem(READ_LOG_KEY, JSON.stringify(log));
   } catch (e) {
@@ -537,9 +560,204 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
+// --- Auth ---
+
+function updateAuthUI() {
+  const loggedOut = document.getElementById("authLoggedOut");
+  const loggedIn = document.getElementById("authLoggedIn");
+  const usernameEl = document.getElementById("authUsername");
+  if (loggedOut && loggedIn && usernameEl) {
+    if (loggedInUser) {
+      loggedOut.style.display = "none";
+      loggedIn.style.display = "";
+      usernameEl.textContent = loggedInUser;
+    } else {
+      loggedOut.style.display = "";
+      loggedIn.style.display = "none";
+    }
+  }
+}
+
+async function initAuth() {
+  try {
+    const res = await apiFetch("/api/me");
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data.username) {
+      loggedInUser = data.username;
+      const logRes = await apiFetch("/api/read-log");
+      if (logRes.ok) {
+        const logData = await logRes.json();
+        const serverLog = logData.log || [];
+        const localLog = (() => {
+          try {
+            const raw = localStorage.getItem(READ_LOG_KEY);
+            return raw ? JSON.parse(raw) : [];
+          } catch {
+            return [];
+          }
+        })();
+        if (localLog.length && !serverLog.length) {
+          readLogCache = localLog;
+          saveReadLog(localLog);
+        } else {
+          readLogCache = serverLog;
+        }
+      } else {
+        readLogCache = [];
+      }
+    }
+  } catch {
+    // No backend (e.g. static serve)
+  }
+  updateAuthUI();
+  renderReadLog();
+}
+
+function openAuthModal(mode) {
+  const modal = document.getElementById("authModal");
+  const title = document.getElementById("authModalTitle");
+  const submitBtn = document.getElementById("authSubmit");
+  const form = document.getElementById("authForm");
+  const errorEl = document.getElementById("authError");
+  if (!modal || !title || !submitBtn) return;
+  errorEl.style.display = "none";
+  errorEl.textContent = "";
+  form.dataset.mode = mode;
+  if (mode === "login") {
+    title.textContent = "Log in";
+    submitBtn.textContent = "Log in";
+  } else {
+    title.textContent = "Create account";
+    submitBtn.textContent = "Create account";
+  }
+  modal.classList.add("visible");
+}
+
+function closeAuthModal() {
+  const modal = document.getElementById("authModal");
+  if (modal) modal.classList.remove("visible");
+}
+
+async function handleAuthSubmit(e) {
+  e.preventDefault();
+  const form = document.getElementById("authForm");
+  const usernameInput = document.getElementById("authUsernameInput");
+  const passwordInput = document.getElementById("authPasswordInput");
+  const errorEl = document.getElementById("authError");
+  const submitBtn = document.getElementById("authSubmit");
+  const title = document.getElementById("authModalTitle");
+  if (!form || !usernameInput || !passwordInput || !errorEl) return;
+  const username = usernameInput.value.trim();
+  const password = passwordInput.value;
+  const mode = form.dataset.mode || "login";
+  errorEl.style.display = "none";
+  submitBtn.disabled = true;
+  try {
+    const path = mode === "login" ? "/api/login" : "/api/register";
+    const res = await apiFetch(path, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (mode === "register") {
+      if (!res.ok) {
+        const noBackend = res.status === 404 || res.status === 0;
+        errorEl.textContent = noBackend
+          ? "Login requires the Python backend. Run `python vital_article.py` instead of `npx serve docs`."
+          : (data.error || "Registration failed");
+        errorEl.style.display = "block";
+        return;
+      }
+      const loginRes = await apiFetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password })
+      });
+      if (!loginRes.ok) {
+        errorEl.textContent = "Account created. Please log in.";
+        errorEl.style.display = "block";
+        form.dataset.mode = "login";
+        title.textContent = "Log in";
+        submitBtn.textContent = "Log in";
+        return;
+      }
+      const loginData = await loginRes.json();
+      loggedInUser = loginData.username || username;
+      const logRes = await apiFetch("/api/read-log");
+      if (logRes.ok) {
+        const logData = await logRes.json();
+        readLogCache = logData.log || [];
+      } else {
+        readLogCache = [];
+      }
+      closeAuthModal();
+      updateAuthUI();
+      renderReadLog();
+      return;
+    }
+    if (!res.ok) {
+      const noBackend = res.status === 404 || res.status === 0;
+      errorEl.textContent = noBackend
+        ? "Login requires the Python backend. Run `python vital_article.py` instead of `npx serve docs`."
+        : (data.error || "Login failed");
+      errorEl.style.display = "block";
+      return;
+    }
+    loggedInUser = data.username || username;
+    const logRes = await apiFetch("/api/read-log");
+    if (logRes.ok) {
+      const logData = await logRes.json();
+      readLogCache = logData.log || [];
+    } else {
+      readLogCache = [];
+    }
+    closeAuthModal();
+    updateAuthUI();
+    renderReadLog();
+  } catch (err) {
+    errorEl.textContent = "Could not connect. Run the Python backend for login.";
+    errorEl.style.display = "block";
+  } finally {
+    submitBtn.disabled = false;
+  }
+}
+
+async function handleLogout() {
+  try {
+    await apiFetch("/api/logout", { method: "POST" });
+  } catch {
+    // ignore
+  }
+  loggedInUser = null;
+  readLogCache = null;
+  updateAuthUI();
+  renderReadLog();
+}
+
 // Wire up when DOM ready
 document.addEventListener("DOMContentLoaded", () => {
-  // fetchArticle is global for onclick
   window.fetchArticle = fetchArticle;
-  renderReadLog();
+  initAuth();
+  document.getElementById("authLoginLink")?.addEventListener("click", (e) => {
+    e.preventDefault();
+    openAuthModal("login");
+  });
+  document.getElementById("authRegisterLink")?.addEventListener("click", (e) => {
+    e.preventDefault();
+    openAuthModal("register");
+  });
+  document.getElementById("authLogout")?.addEventListener("click", (e) => {
+    e.preventDefault();
+    handleLogout();
+  });
+  document.getElementById("authModalClose")?.addEventListener("click", (e) => {
+    e.preventDefault();
+    closeAuthModal();
+  });
+  document.getElementById("authForm")?.addEventListener("submit", handleAuthSubmit);
+  document.getElementById("authModal")?.addEventListener("click", (e) => {
+    if (e.target.id === "authModal") closeAuthModal();
+  });
 });

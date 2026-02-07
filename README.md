@@ -1,10 +1,10 @@
 # Random Technical Wiki
 
-A static web app that fetches random Vital Wikipedia articles by category (Physical Sciences, Engineering & Tech, Society & Economics) and lets you download them as plain text or PDF.
+A web app that fetches random Vital Wikipedia articles by category and lets you download them as plain text or PDF. Log in to sync your article read log across devices.
 
 ## Local Development
 
-### Python (original backend)
+### Python backend (recommended for login & sync)
 
 ```bash
 pip install -r requirements.txt
@@ -12,6 +12,8 @@ python vital_article.py
 ```
 
 Open http://127.0.0.1:8000
+
+Use **Log in** / **Create account** to save your article log to the server. When logged in, your read log syncs across devices.
 
 ### Static (GitHub Pages)
 
