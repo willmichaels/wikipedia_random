@@ -19,6 +19,15 @@
         .meta { color: #666; font-size: 14px; margin-top: 5px; }
         .download-link { font-size: 16px; font-weight: normal; cursor: pointer; }
         .download-link:hover { text-decoration: underline; }
+        #readLogSection { margin-top: 40px; padding-top: 30px; border-top: 1px solid #e0e0e0; text-align: left; }
+        #readLogSection h2 { color: #333; font-size: 18px; margin-bottom: 15px; }
+        .read-log-empty { color: #999; font-size: 14px; }
+        .read-log-entry { margin-bottom: 12px; padding: 8px 0; border-bottom: 1px solid #eee; }
+        .read-log-entry:last-child { border-bottom: none; }
+        .read-log-entry a { font-size: 16px; }
+        .read-log-meta { display: block; color: #666; font-size: 13px; margin-top: 4px; }
+        .read-log-remove { font-size: 13px; color: #999; cursor: pointer; margin-left: 8px; }
+        .read-log-remove:hover { color: #c00; text-decoration: underline; }
     </style>
 </head>
 <body>
@@ -63,6 +72,11 @@
         </div>
 
         <div id="result"></div>
+
+        <div id="readLogSection">
+            <h2>Read log</h2>
+            <div id="readLogList"></div>
+        </div>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>

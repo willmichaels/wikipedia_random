@@ -75,6 +75,81 @@ const HEADERS = {
 // Cache: { category: ["/wiki/Title1", "/wiki/Title2", ...] }
 const ARTICLES_CACHE = {};
 
+const READ_LOG_KEY = "random_wiki_read_log";
+
+function getReadLog() {
+  try {
+    const raw = localStorage.getItem(READ_LOG_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveReadLog(log) {
+  try {
+    localStorage.setItem(READ_LOG_KEY, JSON.stringify(log));
+  } catch (e) {
+    console.error("Failed to save read log:", e);
+  }
+}
+
+function logArticle(url, title, category) {
+  const log = getReadLog();
+  const categoryLabel = CATEGORY_LABELS[category] || category;
+  const existing = log.findIndex((e) => e.url === url);
+  const entry = { title, url, category: categoryLabel, date: new Date().toISOString() };
+  if (existing >= 0) {
+    log[existing] = entry;
+  } else {
+    log.unshift(entry);
+  }
+  saveReadLog(log);
+  renderReadLog();
+}
+
+function removeFromLog(index) {
+  const log = getReadLog();
+  log.splice(index, 1);
+  saveReadLog(log);
+  renderReadLog();
+}
+
+function renderReadLog() {
+  const container = document.getElementById("readLogList");
+  if (!container) return;
+  const log = getReadLog();
+  if (!log.length) {
+    container.innerHTML = '<p class="read-log-empty">No articles logged yet.</p>';
+    return;
+  }
+  container.innerHTML = log
+    .map(
+      (e, i) => `
+    <div class="read-log-entry">
+      <a href="${escapeHtml(e.url)}" target="_blank">${escapeHtml(e.title)}</a>
+      <span class="read-log-meta">${escapeHtml(e.category)} &middot; ${formatLogDate(e.date)}</span>
+      <span class="read-log-remove" data-index="${i}">Remove</span>
+    </div>`
+    )
+    .join("");
+  container.querySelectorAll(".read-log-remove").forEach((el) => {
+    el.addEventListener("click", () => removeFromLog(Number(el.dataset.index)));
+  });
+}
+
+function formatLogDate(iso) {
+  try {
+    return new Date(iso).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric"
+    });
+  } catch {
+    return iso;
+  }
+}
+
 function getPageTitleForCategory(category) {
   return VITAL_SOURCES[category] || GOOD_SOURCES[category] || null;
 }
@@ -430,13 +505,19 @@ async function fetchArticle() {
     <div class="meta">Category: ${escapeHtml(categoryLabel)}</div>
     <div class="meta" style="margin-top: 12px;">
       Download: <span class="download-link" data-url="${escapeHtml(url)}" data-format="txt">Plain text</span> &middot; <span class="download-link" data-url="${escapeHtml(url)}" data-format="pdf">PDF</span>
+      &middot; <span class="download-link log-article-link" data-url="${escapeHtml(url)}" data-title="${escapeHtml(title)}" data-category="${escapeHtml(category)}">Log article</span>
     </div>
   `;
 
   resultDiv.querySelectorAll(".download-link").forEach((el) => {
     el.addEventListener("click", () => {
-      if (el.dataset.format === "txt") downloadTxt(el.dataset.url);
-      else downloadPdf(el.dataset.url);
+      if (el.classList.contains("log-article-link")) {
+        logArticle(el.dataset.url, el.dataset.title, el.dataset.category);
+      } else if (el.dataset.format === "txt") {
+        downloadTxt(el.dataset.url);
+      } else {
+        downloadPdf(el.dataset.url);
+      }
     });
   });
 }
@@ -451,4 +532,5 @@ function escapeHtml(str) {
 document.addEventListener("DOMContentLoaded", () => {
   // fetchArticle is global for onclick
   window.fetchArticle = fetchArticle;
+  renderReadLog();
 });
