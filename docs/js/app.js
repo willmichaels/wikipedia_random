@@ -140,13 +140,18 @@ function renderReadLog() {
 
 function formatLogDate(iso) {
   try {
-    return new Date(iso).toLocaleString("en-US", {
+    const d = new Date(iso);
+    const dateStr = d.toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
-      year: "numeric",
-      hour: "numeric",
-      minute: "2-digit"
+      year: "numeric"
     });
+    const hours = d.getHours();
+    const minutes = d.getMinutes();
+    const ampm = hours >= 12 ? "PM" : "AM";
+    const hour12 = hours % 12 || 12;
+    const minStr = String(minutes).padStart(2, "0");
+    return `${dateStr}, ${hour12}:${minStr} ${ampm}`;
   } catch {
     return iso;
   }
