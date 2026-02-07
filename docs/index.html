@@ -8,7 +8,7 @@
         .container { background: white; max-width: 600px; margin: auto; padding: 40px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         h1 { color: #333; margin-bottom: 25px; }
         
-        select { padding: 10px; font-size: 16px; border-radius: 5px; border: 1px solid #ccc; margin-right: 10px; }
+        select { padding: 10px; font-size: 16px; border-radius: 5px; border: 1px solid #ccc; margin-right: 10px; min-width: 280px; }
         
         button { background-color: #007bff; color: white; border: none; padding: 12px 25px; font-size: 16px; border-radius: 5px; cursor: pointer; transition: background 0.3s; }
         button:hover { background-color: #0056b3; }
@@ -27,9 +27,29 @@
         
         <div>
             <select id="categorySelect">
-                <option value="physics">Physical Sciences</option>
-                <option value="technology">Engineering & Tech</option>
-                <option value="economics">Society & Economics</option>
+                <optgroup label="Vital Articles">
+                    <option value="physics">Physical Sciences</option>
+                    <option value="technology">Engineering & Tech</option>
+                    <option value="economics">Society & Economics</option>
+                </optgroup>
+                <optgroup label="Good Articles">
+                    <option value="agriculture_food_drink">Agriculture, food and drink</option>
+                    <option value="art_architecture">Art and architecture</option>
+                    <option value="engineering_technology">Engineering and technology</option>
+                    <option value="geography_places">Geography and places</option>
+                    <option value="history">History</option>
+                    <option value="language_literature">Language and literature</option>
+                    <option value="mathematics">Mathematics</option>
+                    <option value="media_drama">Media and drama</option>
+                    <option value="music">Music</option>
+                    <option value="natural_sciences">Natural sciences</option>
+                    <option value="philosophy_religion">Philosophy and religion</option>
+                    <option value="social_sciences_society">Social sciences and society</option>
+                    <option value="sports_recreation">Sports and recreation</option>
+                    <option value="video_games">Video games</option>
+                    <option value="warfare">Warfare</option>
+                    <option value="all_good">All good articles</option>
+                </optgroup>
             </select>
             <button onclick="fetchArticle()">Go</button>
         </div>

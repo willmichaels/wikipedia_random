@@ -1,12 +1,53 @@
 /**
  * Random Technical Wiki - Static client-side implementation
- * Fetches Vital Articles via MediaWiki API, parses content, supports text/PDF download.
+ * Fetches Vital Articles and Good Articles via MediaWiki API, parses content, supports text/PDF download.
  */
 
-const SOURCES = {
+const VITAL_SOURCES = {
   physics: "Wikipedia:Vital_articles/Level/4/Physical_sciences",
   technology: "Wikipedia:Vital_articles/Level/4/Technology",
   economics: "Wikipedia:Vital_articles/Level/4/Society_and_social_sciences"
+};
+
+const GOOD_SOURCES = {
+  "agriculture_food_drink": "Wikipedia:Good_articles/Agriculture,_food_and_drink",
+  "art_architecture": "Wikipedia:Good_articles/Art_and_architecture",
+  "engineering_technology": "Wikipedia:Good_articles/Engineering_and_technology",
+  "geography_places": "Wikipedia:Good_articles/Geography_and_places",
+  "history": "Wikipedia:Good_articles/History",
+  "language_literature": "Wikipedia:Good_articles/Language_and_literature",
+  "mathematics": "Wikipedia:Good_articles/Mathematics",
+  "media_drama": "Wikipedia:Good_articles/Media_and_drama",
+  "music": "Wikipedia:Good_articles/Music",
+  "natural_sciences": "Wikipedia:Good_articles/Natural_sciences",
+  "philosophy_religion": "Wikipedia:Good_articles/Philosophy_and_religion",
+  "social_sciences_society": "Wikipedia:Good_articles/Social_sciences_and_society",
+  "sports_recreation": "Wikipedia:Good_articles/Sports_and_recreation",
+  "video_games": "Wikipedia:Good_articles/Video_games",
+  "warfare": "Wikipedia:Good_articles/Warfare",
+  "all_good": "Wikipedia:Good_articles/all"
+};
+
+const CATEGORY_LABELS = {
+  physics: "Physical Sciences",
+  technology: "Engineering & Tech",
+  economics: "Society & Economics",
+  agriculture_food_drink: "Agriculture, food and drink",
+  art_architecture: "Art and architecture",
+  engineering_technology: "Engineering and technology",
+  geography_places: "Geography and places",
+  history: "History",
+  language_literature: "Language and literature",
+  mathematics: "Mathematics",
+  media_drama: "Media and drama",
+  music: "Music",
+  natural_sciences: "Natural sciences",
+  philosophy_religion: "Philosophy and religion",
+  social_sciences_society: "Social sciences and society",
+  sports_recreation: "Sports and recreation",
+  video_games: "Video games",
+  warfare: "Warfare",
+  all_good: "All good articles"
 };
 
 const API_BASE = "https://en.wikipedia.org/w/api.php";
@@ -15,11 +56,15 @@ const HEADERS = { "Api-User-Agent": "RandomTechnicalWiki/1.0 (static)" };
 // Cache: { category: ["/wiki/Title1", "/wiki/Title2", ...] }
 const ARTICLES_CACHE = {};
 
+function getPageTitleForCategory(category) {
+  return VITAL_SOURCES[category] || GOOD_SOURCES[category] || null;
+}
+
 /**
- * Fetch all article links from a Vital Articles page via MediaWiki API.
+ * Fetch all article links from a Wikipedia list page via MediaWiki API.
  */
 async function fetchArticleLinks(category) {
-  const pageTitle = SOURCES[category];
+  const pageTitle = getPageTitleForCategory(category);
   if (!pageTitle) return [];
 
   const allLinks = [];
@@ -49,10 +94,10 @@ async function fetchArticleLinks(category) {
 }
 
 /**
- * Get a random vital article URL for the given category.
+ * Get a random article URL for the given category.
  */
-async function getRandomVitalArticle(category) {
-  if (!SOURCES[category]) return null;
+async function getRandomArticle(category) {
+  if (!getPageTitleForCategory(category)) return null;
 
   if (ARTICLES_CACHE[category]?.length) {
     const href = ARTICLES_CACHE[category][Math.floor(Math.random() * ARTICLES_CACHE[category].length)];
@@ -329,7 +374,7 @@ async function fetchArticle() {
 
   resultDiv.innerHTML = "Loading...";
 
-  const url = await getRandomVitalArticle(category);
+  const url = await getRandomArticle(category);
 
   if (!url) {
     resultDiv.textContent = "Failed to fetch article (likely connection error).";
@@ -337,9 +382,10 @@ async function fetchArticle() {
   }
 
   const title = url.split("/wiki/")[1].replace(/_/g, " ");
+  const categoryLabel = CATEGORY_LABELS[category] || category;
   resultDiv.innerHTML = `
     <div>Read: <a href="${url}" target="_blank">${escapeHtml(title)}</a></div>
-    <div class="meta">Category: ${escapeHtml(category)}</div>
+    <div class="meta">Category: ${escapeHtml(categoryLabel)}</div>
     <div class="meta" style="margin-top: 12px;">
       Download: <span class="download-link" data-url="${escapeHtml(url)}" data-format="txt">Plain text</span> &middot; <span class="download-link" data-url="${escapeHtml(url)}" data-format="pdf">PDF</span>
     </div>
